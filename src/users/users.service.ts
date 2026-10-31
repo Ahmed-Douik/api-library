@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { User } from './entities/user.entity.js';
@@ -7,9 +7,10 @@ import { User } from './entities/user.entity.js';
 export class UsersService {
 
   private users: User[] = [];
+  private nextId = 1;
 
   create(createUserDto: CreateUserDto) {
-    const user: User = {...createUserDto, id: this.users.length + 1 };
+    const user: User = {...createUserDto, id: this.nextId++ };
     this.users.push(user);
     return {status: 201, message: 'User created successfully', data: user};
 
@@ -19,15 +20,23 @@ export class UsersService {
     return {status: 200, message: 'Users retrieved successfully', data: this.users};
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  getUserById(id: number) {
+    const user = this.users.find(user => user.id === id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return {status: 200, message: 'User retrieved successfully', data: user};
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  updateUser(id: number, updateUserDto: UpdateUserDto) {
+    const user = this.getUserById(id).data;
+    Object.assign(user, updateUserDto);
+    return {status: 200, message: 'User updated successfully', data: user};
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  deleteUser(id: number) {
+    const user = this.getUserById(id).data;
+    this.users = this.users.filter(u => u.id !== id);
+    return {status: 200, message: 'User deleted successfully', data: user};
   }
 }
